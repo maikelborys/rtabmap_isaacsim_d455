@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rtabmap_isaacsim_d455</name>
+  <version>1.0.0</version>
+  <description>Unified RTABMap SLAM package for differential robots with RealSense D455 and Isaac Sim support</description>
+  <maintainer email="robot@todo.todo">robot</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Launch system dependencies -->
+  <depend>launch</depend>
+  <depend>launch_ros</depend>
+  <depend>launch_xml</depend>
+  <depend>launch_yaml</depend>
+  <depend>ament_index_python</depend>
+
+  <!-- RTABMap packages -->
+  <depend>rtabmap_slam</depend>
+  <depend>rtabmap_odom</depend>
+  <depend>rtabmap_util</depend>
+  <depend>rtabmap_viz</depend>
+  <depend>rtabmap_msgs</depend>
+  <depend>rtabmap_sync</depend>
+  <depend>rtabmap_demos</depend>
+
+  <!-- Navigation packages -->
+  <depend>nav2_bringup</depend>
+
+  <!-- Camera and sensor packages -->
+  <depend>realsense2_camera</depend>
+  <depend>image_transport</depend>
+
+  <!-- Isaac ROS packages (optional for simulation) -->
+  <depend>isaac_ros_visual_slam</depend>
+  <depend>isaac_ros_image_proc</depend>
+  <depend>isaac_ros_stereo_image_proc</depend>
+
+  <!-- IMU processing -->
+  <depend>imu_filter_madgwick</depend>
+
+  <!-- TF and robot description -->
+  <depend>robot_state_publisher</depend>
+  <depend>tf2_ros</depend>
+
+  <!-- Visualization and tools -->
+  <depend>rviz2</depend>
+  <depend>teleop_twist_keyboard</depend>
+
+  <!-- Sensor processing -->
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

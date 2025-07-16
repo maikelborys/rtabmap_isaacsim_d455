@@ -8,6 +8,7 @@ This project implements SLAM (Simultaneous Localization and Mapping) using RTAB-
 - **NVIDIA Isaac Sim simulation** (testing and development)
 - **NVIDIA RTX 4070 laptop** (GPU-accelerated processing)
 - **Unified launch system** (seamless switching between sim and real hardware)
+- **ROS2 humble, Ubuntu 22.04**
 
 The system is designed for differential drive robots and provides robust SLAM capabilities with excellent loop closure detection and map optimization.
 

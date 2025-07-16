@@ -14,7 +14,7 @@ def launch_setup(context, *args, **kwargs):
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([
                     PathJoinSubstitution([
-                        get_package_share_directory('rtabmap_test'),
+                        get_package_share_directory('rtabmap_isaacsim_d455'),
                         'launch',
                         'realsense_d455_stereo.launch.py'
                     ])
@@ -27,7 +27,7 @@ def launch_setup(context, *args, **kwargs):
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([
                     PathJoinSubstitution([
-                        get_package_share_directory('rtabmap_test'),
+                        get_package_share_directory('rtabmap_isaacsim_d455'),
                         'launch',
                         'isaac_sim.launch.py'
                     ])

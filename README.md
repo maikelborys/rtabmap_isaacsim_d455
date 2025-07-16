@@ -15,7 +15,7 @@ The system is designed for differential drive robots and provides robust SLAM ca
 ## Project Structure
 
 ```
-rtabmap_test/
+rtabmap_isaacsim_d455/
 ├── launch/
 │   ├── rtabmap_main.launch.py              # 🚀 Main unified launch file
 │   ├── realsense_d455_stereo.launch.py     # 📷 RealSense D455 camera setup (included by main launch)
@@ -70,13 +70,13 @@ sudo apt install ros-humble-rqt-robot-monitor
 
 ```bash
 # Basic SLAM with D455
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
 
 # With visual odometry for better accuracy
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true vo:=rtabmap
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=rtabmap
 
 # Localization mode (requires existing map)
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true localization:=true
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true
 ```
 
 ### 🤖 Launch with Isaac Simulator
@@ -93,13 +93,13 @@ ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true localization:=true
 **Step 2**: Launch RTAB-Map
 ```bash
 # Basic simulation SLAM
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=false
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false
 
 # With Isaac visual odometry (disable wheel odom TF first!)
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=false vo:=isaac
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false vo:=isaac
 
 # Custom image resolution
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720
 ```
 
 ## Launch Parameters Reference
@@ -119,28 +119,28 @@ ros2 launch rtabmap_test rtabmap_main.launch.py d455:=false image_width:=1280 im
 ### 🎯 High-Accuracy Mapping
 ```bash
 # D455 with visual odometry and stereo
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true vo:=rtabmap stereo:=true
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=rtabmap stereo:=true
 
 # Simulation with higher resolution
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720 vo:=rtabmap
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720 vo:=rtabmap
 ```
 
 ### 🧭 Navigation Only (Localization)
 ```bash
 # Use existing map for navigation
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true localization:=true
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true
 
 # Disable visualization for headless operation
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true localization:=true rtabmap_viz:=false
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true rtabmap_viz:=false
 ```
 
 ### 🔄 Different Sensor Modes
 ```bash
 # RGB+Depth mode instead of stereo
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true stereo:=false
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true stereo:=false
 
 # Pure wheel odometry (no visual odometry)
-ros2 launch rtabmap_test rtabmap_main.launch.py d455:=true vo:=none
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=none
 ```
 
 ## Configuration Files

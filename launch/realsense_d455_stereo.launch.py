@@ -2,7 +2,7 @@
 #   A realsense D455
 #   Install realsense2 ros2 package (ros-$ROS_DISTRO-realsense2-camera)
 # Example:
-#   $ ros2 launch rtabmap_test realsense_d455_stereo.launch.py
+#   $ ros2 launch rtabmap_isaacsim_d455 realsense_d455_stereo.launch.py
 
 import os
 

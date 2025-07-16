@@ -62,8 +62,8 @@ def launch_setup(context, *args, **kwargs):
         'nav2_bringup')
     pkg_rtabmap_demos = get_package_share_directory(
         'rtabmap_demos')
-    pkg_rtabmap_test = get_package_share_directory(
-        'rtabmap_test')
+    pkg_rtabmap_isaacsim_d455 = get_package_share_directory(
+        'rtabmap_isaacsim_d455')
 
     # Paths
     nav2_launch = PathJoinSubstitution(
@@ -77,9 +77,9 @@ def launch_setup(context, *args, **kwargs):
     rtabmap_launch = PathJoinSubstitution(
         [pkg_rtabmap_demos, 'launch', 'isaac', 'isaac_vslam.launch.py'])
     stereo_processing_launch = PathJoinSubstitution(
-        [pkg_rtabmap_test, 'launch', 'stereo_image_processing.launch.py'])
+        [pkg_rtabmap_isaacsim_d455, 'launch', 'stereo_image_processing.launch.py'])
     isaac_vslam_launch = PathJoinSubstitution(
-        [pkg_rtabmap_test, 'launch', 'isaac_visual_slam.launch.py'])
+        [pkg_rtabmap_isaacsim_d455, 'launch', 'isaac_visual_slam.launch.py'])
     
     vo = LaunchConfiguration('vo').perform(context)
 

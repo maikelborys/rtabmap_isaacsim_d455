@@ -28,9 +28,9 @@ def launch_setup(context, *args, **kwargs):
     rtabmap_launch = PathJoinSubstitution(
         [pkg_rtabmap_demos, 'launch', 'isaac', 'isaac_vslam.launch.py'])
     stereo_processing_launch = PathJoinSubstitution(
-        [pkg_rtabmap_isaacsim_d455, 'launch', 'stereo_image_processing.launch.py'])
+        [pkg_rtabmap_isaacsim_d455, 'launch', 'simulation', 'stereo_image_processing.launch.py'])
     isaac_vslam_launch = PathJoinSubstitution(
-        [pkg_rtabmap_isaacsim_d455, 'launch', 'isaac_visual_slam.launch.py'])
+        [pkg_rtabmap_isaacsim_d455, 'launch', 'simulation', 'isaac_visual_slam.launch.py'])
     
     vo = LaunchConfiguration('vo').perform(context)
 

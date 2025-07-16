@@ -1,16 +1,39 @@
-# RTAB-Map Robot Project
+# RTAB-Map Robot SLAM Project
 
 ## Overview
 
-This project implements SLAM (Simultaneous Localization and Mapping) using RTAB-Map for a differential drive robot with optimized parameters for high-performance mapping and navigation. It supports:
+This project implements SLAM (Simultaneous Localization and Mapping) using RTAB-Map for a differential drive robot. The system is designed to seamlessly switch between Isaac Sim simulation and real RealSense D455 camera hardware, providing robust mapping and navigation capabilities.
 
-- **Intel RealSense D455 camera** (real robot deployment)
-- **NVIDIA Isaac Sim simulation** (testing and development)
-- **NVIDIA RTX 4070 laptop** (GPU-accelerated processing)
-- **Unified launch system** (seamless switching between sim and real hardware)
-- **ROS2 humble, Ubuntu 22.04**
+### Key Features
+- **🤖 Unified Launch System**: Single command switches between simulation and real hardware
+- **📷 Intel RealSense D455**: Optimized stereo SLAM with IMU integration
+- **🎮 NVIDIA Isaac Sim**: GPU-accelerated simulation environment
+- **⚡ RTX 4070 Optimized**: Hardware-accelerated processing for real-time SLAM
+- **🧭 ROS2 Humble**: Modern robotics middleware
 
-The system is designed for differential drive robots and provides robust SLAM capabilities with excellent loop closure detection and map optimization.
+## Quick Start
+
+### Basic Usage
+```bash
+# Simulation mode (default)
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py
+
+# Real robot with D455 camera
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
+```
+
+### Advanced Usage
+```bash
+# Simulation with custom parameters
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    vo:=rtabmap \
+    rtabmap_viz:=true \
+    image_width:=1280 \
+    image_height:=720
+
+# Real robot - just works out of the box
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
+```
 
 ## Project Structure
 
@@ -18,36 +41,50 @@ The system is designed for differential drive robots and provides robust SLAM ca
 rtabmap_isaacsim_d455/
 ├── launch/
 │   ├── rtabmap_main.launch.py              # 🚀 Main unified launch file
-│   ├── realsense_d455_stereo.launch.py     # 📷 RealSense D455 camera setup (included by main launch)
-│   ├── isaac_sim.launch.py                 # 🤖 Isaac Sim setup (included by main launch)
-│   ├── stereo_image_processing.launch.py   # 🖼️  Isaac Sim image processing (helper)
-│   └── isaac_visual_slam.launch.py         # 🤖 Isaac ROS Visual SLAM (helper)
-├── config/
-│   ├── rtabmap_params.yaml                 # ⚙️  RTAB-Map optimized parameters
-│   └── nav2_rtabmap_params.yaml            # 🧭 Nav2 navigation parameters
-└── README.md                               # 📖 This documentation
+│   ├── real_robot/
+│   │   └── realsense_d455_stereo.launch.py # 📷 RealSense D455 SLAM setup
+│   ├── simulation/
+│   │   ├── isaac_sim.launch.py             # 🤖 Isaac Sim main launch
+│   │   ├── stereo_image_processing.launch.py # 🖼️ Image processing for Isaac
+│   │   └── isaac_visual_slam.launch.py     # 👁️ Isaac Visual SLAM integration
+│   └── archive/                            # 📦 Archived/test launch files
+├── config/                                 # ⚙️ Configuration files (future)
+└── README.md                              # 📖 This documentation
 ```
 
 ## Hardware Requirements
 
-### Minimum System Requirements
-- **CPU**: Intel i5-8th gen or AMD Ryzen 5 3600 (minimum)
-- **GPU**: NVIDIA RTX 4070 or better (for GPU acceleration)
-- **RAM**: 16GB (32GB recommended for large mapping sessions)
-- **Storage**: SSD with at least 50GB free space
+### Minimum System
+- **CPU**: Intel i5-8th gen or AMD Ryzen 5 3600+
+- **GPU**: NVIDIA RTX 4070 or better (for optimal performance)
+- **RAM**: 16GB (32GB recommended for large mapping)
+- **Storage**: SSD with 50GB+ free space
 
-### Camera Requirements
-- **Intel RealSense D455**: USB 3.0+ connection, good lighting conditions
-- **Isaac Sim**: NVIDIA Isaac Sim 2023.1.0+
+### Camera Hardware
+- **Intel RealSense D455**: USB 3.0+ connection required
+- **Good lighting**: Essential for stereo vision quality
 
 ## Software Dependencies
 
-### Core ROS 2 Packages
+### Install ROS2 Packages
 ```bash
+# Core RTAB-Map packages
 sudo apt install ros-humble-rtabmap-ros
-sudo apt install ros-humble-nav2-bringup
+
+# RealSense camera support
 sudo apt install ros-humble-realsense2-camera
+
+# IMU processing
 sudo apt install ros-humble-imu-filter-madgwick
+
+# Navigation (if needed)
+sudo apt install ros-humble-nav2-bringup
+```
+
+### Isaac Sim Requirements
+- NVIDIA Isaac Sim 2023.1.0 or later
+- CUDA-compatible GPU (RTX series recommended)
+- Omniverse Launcher installed
 ```
 
 ### Isaac ROS (for simulation)
@@ -58,9 +95,123 @@ sudo apt install ros-humble-isaac-ros-image-proc
 sudo apt install ros-humble-isaac-ros-stereo-image-proc
 ```
 
-### Additional Tools
+## Build Instructions
+
 ```bash
-sudo apt install ros-humble-teleop-twist-keyboard
+# Navigate to your ROS2 workspace
+cd ~/robot_ws  # or your workspace path
+
+# Build the package
+colcon build --packages-select rtabmap_isaacsim_d455
+
+# Source the workspace
+source install/setup.bash
+```
+
+## Launch File Details
+
+### Main Launch File: `rtabmap_main.launch.py`
+
+This is your primary entry point. It automatically detects hardware configuration and launches appropriate subsystems.
+
+**Parameters:**
+- `d455` (default: `false`): Hardware selection
+  - `true`: Launch with RealSense D455 camera
+  - `false`: Launch with Isaac Sim simulation
+
+**Simulation Parameters** (only used when `d455=false`):
+- `rtabmap_viz` (default: `true`): Enable RTAB-Map visualization
+- `localization` (default: `false`): Start in localization mode
+- `vo` (default: `none`): Visual odometry method
+  - `none`: No visual odometry
+  - `rtabmap`: Use RTAB-Map's visual odometry
+  - `isaac`: Use Isaac ROS visual SLAM
+- `stereo` (default: `true`): Enable stereo camera mode
+- `image_width` (default: `960`): Simulation image width
+- `image_height` (default: `600`): Simulation image height
+
+### Real Robot: `real_robot/realsense_d455_stereo.launch.py`
+
+Configures RealSense D455 camera with optimized SLAM parameters.
+
+**Features:**
+- Stereo infrared camera setup
+- IMU integration with Madgwick filter
+- Optimized RTAB-Map parameters for D455
+- Automatic IR emitter disabling for stereo
+
+**Parameters:**
+- `unite_imu_method` (default: `2`): IMU data processing
+  - `0`: No IMU unification
+  - `1`: Copy method
+  - `2`: Linear interpolation (recommended)
+
+### Simulation: `simulation/isaac_sim.launch.py`
+
+Main Isaac Sim integration with conditional Isaac ROS support.
+
+**Components:**
+- Stereo image rectification
+- Optional Isaac Visual SLAM
+- Nav2 navigation integration
+- RTAB-Map SLAM with simulation parameters
+
+## Usage Examples
+
+### Basic Workflow
+
+#### 1. Real Robot Operation
+```bash
+# Connect your RealSense D455 camera
+# Verify camera connection
+realsense-viewer
+
+# Launch RTAB-Map SLAM
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
+
+# In another terminal, control robot
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+#### 2. Simulation Operation
+```bash
+# Start Isaac Sim with your robot scene
+# Then launch RTAB-Map
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py
+
+# For Isaac Visual SLAM instead of RTAB-Map
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py vo:=isaac
+```
+
+### Advanced Examples
+
+#### High-Quality Mapping (Real Robot)
+```bash
+# Full resolution with visualization
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
+```
+
+#### Simulation Development
+```bash
+# Custom image resolution for simulation
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    image_width:=1280 \
+    image_height:=720 \
+    vo:=rtabmap \
+    rtabmap_viz:=true
+```
+
+#### Localization Mode (using existing map)
+```bash
+# Real robot localization
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    d455:=true \
+    localization:=true
+
+# Simulation localization
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    localization:=true
+```
 sudo apt install ros-humble-rqt-robot-monitor
 ```
 
@@ -218,224 +369,129 @@ ros2 run rqt_tf_tree rqt_tf_tree
 ros2 topic hz /front_stereo_camera/left/image_raw
 ```
 
-## Performance Optimization
+## Topic Information
 
-### For RTX 4070 Laptops
-1. **GPU Memory**: Monitor with `nvidia-smi`
-2. **CPU Cores**: RTAB-Map uses multi-threading effectively
-3. **Storage**: Use SSD for database storage
-4. **Cooling**: Ensure adequate cooling during long mapping sessions
+### Real Robot Topics (RealSense D455)
+```bash
+# Camera topics
+/camera/infra1/image_rect_raw    # Left infrared image
+/camera/infra2/image_rect_raw    # Right infrared image
+/camera/infra1/camera_info       # Left camera info
+/camera/infra2/camera_info       # Right camera info
+/camera/imu                      # Raw IMU data
+/imu/data                        # Filtered IMU data
 
-### Memory Usage Tips
-- **Database Location**: Store on fast SSD (`~/rtabmap.db`)
-- **Clear Cache**: Delete old databases to free space
-- **Parameter Tuning**: Adjust `Mem/STMSize` based on available RAM
+# RTAB-Map topics
+/rtabmap/map                     # Occupancy grid map
+/rtabmap/grid_map                # Grid map
+/rtabmap/mapGraph                # Graph structure
+/odom                            # Visual odometry
+```
+
+### Simulation Topics (Isaac Sim)
+```bash
+# Isaac Sim camera topics
+/rgb_left                       # Left RGB camera
+/rgb_right                       # Right RGB camera
+/camera_info_left                # Left camera info
+/camera_info_right               # Right camera info
+
+# Processed topics
+/left/image_rect                 # Rectified left image
+/right/image_rect                # Rectified right image
+```
 
 ## Troubleshooting
 
-### 🔧 Common Issues
+### Common Issues
 
-#### Robot Doesn't Move in Simulation
+#### RealSense D455 Problems
 ```bash
-# Check TF tree
+# Camera not detected
+# 1. Check USB connection (USB 3.0+ required)
+# 2. Verify permissions
+sudo usermod -a -G dialout $USER
+# 3. Reboot and try
+realsense-viewer
+
+# Poor stereo quality
+# - Ensure good lighting conditions
+# - Check camera calibration
+# - Verify IR emitter is disabled
+```
+
+#### Isaac Sim Integration
+```bash
+# Isaac Sim not connecting
+# 1. Verify Isaac Sim is running
+# 2. Check ROS bridge is active
+# 3. Verify topic names match
+
+# Performance issues
+# - Reduce image resolution
+# - Check GPU memory usage
+# - Monitor CPU usage
+```
+
+#### RTAB-Map Issues
+```bash
+# No loop closures
+# - Increase visual features in scene
+# - Check camera calibration
+# - Verify stereo baseline
+
+# Poor mapping quality
+# - Slow down robot movement
+# - Improve lighting conditions
+# - Check IMU calibration
+```
+
+### Diagnostic Commands
+```bash
+# Check topics
+ros2 topic list
+
+# Monitor camera data
+ros2 topic echo /camera/infra1/image_rect_raw
+
+# Check RTAB-Map status
+ros2 topic echo /rtabmap/info
+
+# Verify transforms
 ros2 run tf2_tools view_frames
-
-# Verify nav2 parameters
-ros2 param list /controller_server
-
-# Check cmd_vel output
-ros2 topic echo /cmd_vel
 ```
 
-#### Visual Odometry Unstable
-```bash
-# Increase feature detection
-ros2 param set /rtabmap Kp/MaxFeatures 600
+## Performance Optimization
 
-# Try different detector
-ros2 param set /rtabmap Kp/DetectorStrategy 9  # ORB detector
+### For RTX 4070 Laptops
+- Enable GPU acceleration in RTAB-Map parameters
+- Use optimal image resolution (960x600 for real-time)
+- Monitor thermal throttling during long mapping sessions
 
-# Check camera calibration
-ros2 topic echo /camera/color/camera_info
-```
-
-#### Camera Connection Issues (D455)
-```bash
-# Check USB connection
-lsusb | grep Intel
-
-# Restart camera driver
-ros2 lifecycle set /camera/realsense2_camera_manager configure
-ros2 lifecycle set /camera/realsense2_camera_manager activate
-
-# Verify camera topics
-ros2 topic list | grep camera
-```
-
-#### Isaac Sim Performance Issues
-1. **Reduce Resolution**: Use `image_width:=640 image_height:=480`
-2. **Disable Unnecessary Sensors**: Turn off unused cameras
-3. **GPU Memory**: Close other GPU applications
-4. **Simulation Speed**: Reduce physics timestep
-
-### 🚨 Error Codes Reference
-
-| Error | Solution |
-|-------|----------|
-| `TF timeout` | Check robot_state_publisher and odom→base_link |
-| `Database locked` | Delete existing `.db` file or change path |
-| `No camera info` | Verify camera calibration and topics |
-| `Memory limit` | Reduce `Mem/STMSize` or increase system RAM |
-
-## Performance Benchmarks
-
-### Typical Performance (RTX 4070)
-- **Mapping Rate**: 10-20 Hz depending on scene complexity
-- **Loop Closure**: ~2-5 seconds detection time
-- **Memory Usage**: 4-8GB RAM for typical office environment
-- **GPU Usage**: 30-60% during active mapping
-
-### Database Sizes
-- **Office Environment** (50m × 50m): ~500MB
-- **Large Building** (100m × 100m): ~2-5GB
-- **Outdoor Area** (200m × 200m): ~10-20GB
+### Memory Management
+- Clear RTAB-Map database periodically with `-d` argument
+- Monitor RAM usage during large mapping sessions
+- Use localization mode for navigation after mapping
 
 ## Contributing
 
-1. **Fork** the repository
-2. **Create** feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to branch (`git push origin feature/amazing-feature`)
-5. **Open** Pull Request
+1. Follow ROS2 coding standards
+2. Test with both simulation and real hardware
+3. Update documentation for new features
+4. Ensure backward compatibility
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- **RTAB-Map Team**: For the excellent SLAM library
-- **NVIDIA Isaac Team**: For Isaac ROS and simulation tools
-- **Intel RealSense Team**: For camera drivers and SDK
-- **Nav2 Team**: For the navigation stack
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
 For issues and questions:
-1. **Check** this README and troubleshooting section
-2. **Search** existing GitHub issues
-3. **Create** new issue with detailed description and logs
-4. **Join** ROS Discourse for community support
+1. Check this README troubleshooting section
+2. Verify all dependencies are installed
+3. Test with minimal configuration first
+4. Open an issue with detailed logs
 
 ---
 
-## 🎓 Git & GitHub Field Manual for Cadets
-
-Welcome, aspiring developer! You've built something magnificent, and now it's time to give it a permanent home in the digital cosmos. This guide will turn you from a Git-newbie into a version control virtuoso.
-
-### Part 1: The Grand Initiation (First-Time Setup)
-
-This is how you get your project onto GitHub for the first time.
-
-**Step 1: Initialize Your Local Time Machine (Git Repository)**
-First, we must turn your project folder into a repository. It's like installing a time machine right in your lab.
-
-```bash
-# Navigate to your project's root directory
-cd /home/robot/robot_ws
-
-# Initialize the repository
-git init
-```
-
-**Step 2: Prepare Your Files for Launch**
-Gather all your brilliant work and prepare it for the first snapshot in time.
-
-```bash
-# Add all files to the staging area
-git add .
-```
-
-**Step 3: Seal the First Time Capsule (Commit)**
-Create your first commit. This is a snapshot of your project at this exact moment. The message explains what's in the snapshot.
-
-```bash
-# Commit the files with a descriptive message
-git commit -m "feat: Initial stable version of RTAB-Map project"
-```
-
-**Step 4: Create a Home in the Cosmos (GitHub Repository)**
-1. Go to [GitHub.com](https://github.com) and log in.
-2. Click the `+` icon in the top-right corner and select **"New repository"**.
-3. Name your repository (e.g., `my-robot-slam-project`).
-4. **IMPORTANT**: Do NOT initialize it with a README, .gitignore, or license. Your project already has these.
-5. Click **"Create repository"**.
-
-**Step 5: Connect Your Lab to the Cosmos**
-You'll see a page with a URL. Copy it. Now, link your local repository to the one on GitHub.
-
-```bash
-# Replace <YOUR_GITHUB_REPO_URL> with the URL you copied
-git remote add origin <YOUR_GITHUB_REPO_URL>
-
-# Verify the connection
-git remote -v
-```
-
-**Step 6: The Final Push!**
-Launch your code into the GitHub galaxy!
-
-```bash
-# Rename your primary branch to 'main' (a common standard)
-git branch -M main
-
-# Push your code to the 'main' branch on GitHub
-git push -u origin main
-```
-
-Congratulations! Your code is now safely stored on GitHub.
-
-### Part 2: Marking Your Masterpieces (Creating a "Stable Version")
-
-You wanted to mark this as a "stable version." The best way to do this is with a **tag**. Tags are markers for specific commits, perfect for releases.
-
-```bash
-# Create a tag for your first stable version
-# The -a flag creates an annotated tag, and -m provides a message
-git tag -a v1.0 -m "Stable Version 1.0: Initial setup for D455 and Isaac Sim"
-
-# Push the tag to GitHub (they don't go up automatically)
-git push origin v1.0
-```
-Now, if you look at your repository on GitHub, you'll see "v1.0" in the "Releases" or "Tags" section.
-
-### Part 3: The Sacred Ritual of Saving (Your Daily Workflow)
-
-For all future changes, your workflow will be a simple loop.
-
-1.  **Make your changes**: Edit code, add files, etc.
-2.  **Check the status**: See what you've changed.
-    ```bash
-    git status
-    ```
-3.  **Add your changes**: Stage the files you want to save in the next snapshot.
-    ```bash
-    # Add a specific file
-    git add path/to/your/file.py
-
-    # Or add all changes
-    git add .
-    ```
-4.  **Commit your changes**: Create the new snapshot with a clear message.
-    ```bash
-    git commit -m "feat: Add an amazing new feature"
-    # or "fix: Fix a pesky bug"
-    # or "docs: Update the README"
-    ```
-5.  **Push your changes**: Send your new commits to GitHub.
-    ```bash
-    git push
-    ```
-
-And that's it! You are now officially a practitioner of the version control arts. Go forth and code with confidence!
-# rtabmap_isaacsim_d455
+**Happy SLAM-ming! 🤖📍**

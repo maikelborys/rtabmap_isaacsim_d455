@@ -1,496 +1,465 @@
-# RTAB-Map Robot SLAM Project
+# RTAB-Map Isaac Sim D455 Integration
 
-## Overview
+A comprehensive ROS2 package for SLAM (Simultaneous Localization and Mapping) that seamlessly integrates RTAB-Map with both NVIDIA Isaac Sim simulation and Intel RealSense D455 camera hardware. This unified system enables robust mapping, localization, and autonomous navigation for differential drive robots.
 
-This project implements SLAM (Simultaneous Localization and Mapping) using RTAB-Map for a differential drive robot. The system is designed to seamlessly switch between Isaac Sim simulation and real RealSense D455 camera hardware, providing robust mapping and navigation capabilities.
+## 🎯 Key Features
 
-### Key Features
-- **🤖 Unified Launch System**: Single command switches between simulation and real hardware
-- **📷 Intel RealSense D455**: Optimized stereo SLAM with IMU integration
-- **🎮 NVIDIA Isaac Sim**: GPU-accelerated simulation environment
-- **⚡ RTX 4070 Optimized**: Hardware-accelerated processing for real-time SLAM
-- **🧭 ROS2 Humble**: Modern robotics middleware
+- **🔄 Unified Launch System**: Single command interface that automatically switches between simulation and real hardware
+- **📷 Intel RealSense D455**: Optimized stereo vision SLAM with IMU sensor fusion
+- **🎮 NVIDIA Isaac Sim**: GPU-accelerated simulation with realistic sensor modeling
+- **🧠 RTABMap Integration**: Advanced visual SLAM with loop closure detection
+- **🧭 Nav2 Navigation**: Full autonomous navigation stack integration
+- **⚡ Hardware Acceleration**: Optimized for NVIDIA RTX GPUs
+- **🔧 ROS2 Humble**: Modern robotics middleware with real-time capabilities
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Basic Usage
 ```bash
-# Simulation mode (default)
+# Launch in simulation mode (default)
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py
 
-# Real robot with D455 camera
+# Launch with real RealSense D455 camera
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
 ```
 
-### Advanced Usage
+### Advanced Configuration
 ```bash
-# Simulation with custom parameters
+# Simulation with RTABMap visual odometry
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
     vo:=rtabmap \
     rtabmap_viz:=true \
     image_width:=1280 \
     image_height:=720
 
-# Real robot - just works out of the box
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
+# Simulation with Isaac Visual SLAM
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    vo:=isaac \
+    stereo:=true
+
+# Localization mode (requires existing map)
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    localization:=true
 ```
 
-## Project Structure
+## 📁 Project Architecture
 
 ```
 rtabmap_isaacsim_d455/
 ├── launch/
-│   ├── rtabmap_main.launch.py              # 🚀 Main unified launch file
+│   ├── rtabmap_main.launch.py                    # 🚀 Main unified launcher
 │   ├── real_robot/
-│   │   └── realsense_d455_stereo.launch.py # 📷 RealSense D455 SLAM setup
+│   │   └── realsense_d455_stereo.launch.py       # 📷 Real hardware configuration
 │   ├── simulation/
-│   │   ├── isaac_sim.launch.py             # 🤖 Isaac Sim main launch
-│   │   ├── stereo_image_processing.launch.py # 🖼️ Image processing for Isaac
-│   │   └── isaac_visual_slam.launch.py     # 👁️ Isaac Visual SLAM integration
-│   └── archive/                            # 📦 Archived/test launch files
-├── config/                                 # ⚙️ Configuration files (future)
-└── README.md                              # 📖 This documentation
+│   │   ├── isaac_sim.launch.py                   # 🤖 Isaac Sim integration
+│   │   ├── stereo_image_processing.launch.py     # 🖼️ GPU-accelerated image processing
+│   │   └── isaac_visual_slam.launch.py           # 👁️ Isaac Visual SLAM
+│   └── archive/                                  # 📦 Legacy/experimental launches
+├── config/
+│   ├── nav2_rtabmap_params.yaml                  # 🧭 Navigation parameters
+│   └── rtabmap.rviz                              # 📊 Visualization configuration
+├── package.xml                                   # 📋 Package dependencies
+└── CMakeLists.txt                                # 🔧 Build configuration
 ```
 
-## Hardware Requirements
+## 🛠️ System Architecture
 
-### Minimum System
-- **CPU**: Intel i5-8th gen or AMD Ryzen 5 3600+
-- **GPU**: NVIDIA RTX 4070 or better (for optimal performance)
-- **RAM**: 16GB (32GB recommended for large mapping)
-- **Storage**: SSD with 50GB+ free space
+### Core Components
 
-### Camera Hardware
-- **Intel RealSense D455**: USB 3.0+ connection required
-- **Good lighting**: Essential for stereo vision quality
+#### 1. Main Launch Controller (`rtabmap_main.launch.py`)
+The unified entry point that intelligently routes to either simulation or real hardware based on the `d455` parameter:
 
-## Software Dependencies
+- **Simulation Mode** (`d455:=false`): Launches Isaac Sim integration with GPU-accelerated image processing
+- **Real Hardware Mode** (`d455:=true`): Configures RealSense D455 camera with optimized stereo SLAM settings
 
-### Install ROS2 Packages
+#### 2. Simulation Pipeline (`simulation/`)
+- **Isaac Sim Integration**: Connects to NVIDIA Isaac Sim for realistic robot simulation
+- **Stereo Image Processing**: GPU-accelerated image rectification and resizing using Isaac ROS
+- **Visual Odometry Options**: 
+  - `vo:=none` - No visual odometry (wheel odometry only)
+  - `vo:=rtabmap` - RTABMap's built-in visual odometry
+  - `vo:=isaac` - Isaac Visual SLAM integration
+
+#### 3. Real Hardware Pipeline (`real_robot/`)
+- **RealSense D455 Configuration**: Optimized parameters for stereo vision and IMU fusion
+- **Topic Remapping**: Automatic mapping from D455 infrared cameras to RTABMap inputs
+- **IMU Integration**: Madgwick filter for sensor fusion and improved odometry
+
+#### 4. Navigation Stack Integration
+- **Nav2 Integration**: Full autonomous navigation with dynamic obstacle avoidance
+- **Custom Parameters**: Optimized for differential drive robots (TurtleBot3-style)
+- **Real-time Path Planning**: Global and local planners with recovery behaviors
+
+## 🔧 Technical Details
+
+### Sensor Configuration
+
+#### RealSense D455 Setup
+```yaml
+Camera Configuration:
+  - Infrared Stereo: 848x480 @ 30fps
+  - IMU: 6-DOF (gyroscope + accelerometer)
+  - Depth Range: 0.2m - 10m
+  - Field of View: 87° × 58°
+
+RTABMap Parameters:
+  - Frame ID: camera_link
+  - Stereo Mode: True
+  - IMU Integration: Linear interpolation
+  - Loop Closure: Visual bag-of-words
+```
+
+#### Isaac Sim Configuration
+```yaml
+Virtual Camera:
+  - Resolution: Configurable (default 960x600)
+  - Stereo Baseline: Realistic camera separation
+  - GPU Acceleration: CUDA-enabled image processing
+  - Physics Simulation: Real-time sensor modeling
+```
+
+### Visual Odometry Modes
+
+#### 1. No Visual Odometry (`vo:=none`)
+- **Best for**: Testing wheel odometry, simple environments
+- **Odometry Source**: Robot base encoders only
+- **Performance**: Lowest computational load
+- **Accuracy**: Depends on wheel slip and surface conditions
+
+#### 2. RTABMap Visual Odometry (`vo:=rtabmap`)
+- **Best for**: General purpose SLAM, loop closure detection
+- **Features**: ORB feature detection, stereo matching
+- **Performance**: Moderate computational load
+- **Accuracy**: High accuracy with good texture environments
+
+#### 3. Isaac Visual SLAM (`vo:=isaac`)
+- **Best for**: GPU-accelerated processing, simulation environments
+- **Features**: NVIDIA cuVSLAM, hardware acceleration
+- **Performance**: High frame rate processing
+- **Accuracy**: Excellent with NVIDIA RTX GPUs
+
+### Navigation Architecture
+
+```
+Robot Base Controller → Sensor Data → Hardware Type Decision
+                                           ↓
+                               ┌─────────────────┐
+                               │   d455:=true    │   d455:=false
+                               │                 │
+                         RealSense D455    Isaac Sim
+                               │                 │
+                         Stereo + IMU    Virtual Stereo
+                               │                 │
+                               └─────────────────┘
+                                       ↓
+                                RTABMap SLAM
+                                       ↓
+                             Map + Localization
+                                       ↓
+                               Nav2 Planning
+                                       ↓
+                              Cmd_vel Commands
+                                       ↓
+                            Robot Base Controller
+```
+
+## 📦 Dependencies
+
+### Required ROS2 Packages
+```xml
+<!-- Core RTABMap packages -->
+rtabmap_slam, rtabmap_odom, rtabmap_util, rtabmap_viz
+rtabmap_msgs, rtabmap_sync, rtabmap_demos
+
+<!-- Navigation -->
+nav2_bringup
+
+<!-- Camera and sensors -->
+realsense2_camera, image_transport, imu_filter_madgwick
+
+<!-- Isaac ROS (for simulation) -->
+isaac_ros_visual_slam, isaac_ros_image_proc, isaac_ros_stereo_image_proc
+
+<!-- Visualization and utilities -->
+rviz2, teleop_twist_keyboard, robot_state_publisher, tf2_ros
+```
+
+### System Requirements
+
+#### For Real Hardware:
+- **Camera**: Intel RealSense D455
+- **OS**: Ubuntu 22.04 LTS
+- **ROS**: ROS2 Humble
+- **CPU**: Intel i5+ or AMD Ryzen 5+ (recommended)
+- **RAM**: 8GB minimum, 16GB recommended
+
+#### For Simulation:
+- **GPU**: NVIDIA RTX series (RTX 4070+ recommended)
+- **CUDA**: 11.8 or newer
+- **Isaac Sim**: 2023.1.1 or newer
+- **VRAM**: 8GB minimum, 12GB+ recommended
+
+## 🚀 Installation Guide
+
+### 1. Install ROS2 Humble
 ```bash
-# Core RTAB-Map packages
-sudo apt install ros-humble-rtabmap-ros
+# Add ROS2 repository
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository universe
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
-# RealSense camera support
+# Install ROS2 Humble
+sudo apt update
+sudo apt install ros-humble-desktop
+```
+
+### 2. Install RTABMap and Dependencies
+```bash
+# Install RTABMap packages
+sudo apt install ros-humble-rtabmap-*
+
+# Install navigation stack
+sudo apt install ros-humble-nav2-*
+
+# Install camera and sensor packages
 sudo apt install ros-humble-realsense2-camera
-
-# IMU processing
 sudo apt install ros-humble-imu-filter-madgwick
+sudo apt install ros-humble-image-transport-plugins
 
-# Navigation (if needed)
-sudo apt install ros-humble-nav2-bringup
+# Install utilities
+sudo apt install ros-humble-teleop-twist-keyboard
+sudo apt install ros-humble-robot-state-publisher
 ```
 
-### Isaac Sim Requirements
-- NVIDIA Isaac Sim 2023.1.0 or later
-- CUDA-compatible GPU (RTX series recommended)
-- Omniverse Launcher installed
-```
-
-### Isaac ROS (for simulation)
+### 3. Install Isaac ROS (for simulation)
 ```bash
-# Follow NVIDIA Isaac ROS installation guide
-sudo apt install ros-humble-isaac-ros-visual-slam
-sudo apt install ros-humble-isaac-ros-image-proc
-sudo apt install ros-humble-isaac-ros-stereo-image-proc
+# Install Isaac ROS packages
+sudo apt install ros-humble-isaac-ros-*
+
+# Or build from source for latest features
+cd ~/ros2_ws/src
+git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
+git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam.git
+git clone https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_image_pipeline.git
 ```
 
-## Build Instructions
-
+### 4. Build the Package
 ```bash
-# Navigate to your ROS2 workspace
-cd ~/robot_ws  # or your workspace path
+# Clone this repository
+cd ~/ros2_ws/src
+git clone <repository-url> rtabmap_isaacsim_d455
 
-# Build the package
+# Build the workspace
+cd ~/ros2_ws
 colcon build --packages-select rtabmap_isaacsim_d455
 
 # Source the workspace
 source install/setup.bash
 ```
 
-## Launch File Details
+## 🎮 Usage Examples
 
-### Main Launch File: `rtabmap_main.launch.py`
-
-This is your primary entry point. It automatically detects hardware configuration and launches appropriate subsystems.
-
-**Parameters:**
-- `d455` (default: `false`): Hardware selection
-  - `true`: Launch with RealSense D455 camera
-  - `false`: Launch with Isaac Sim simulation
-
-**Simulation Parameters** (only used when `d455=false`):
-- `rtabmap_viz` (default: `true`): Enable RTAB-Map visualization
-- `localization` (default: `false`): Start in localization mode
-- `vo` (default: `none`): Visual odometry method
-  - `none`: No visual odometry
-  - `rtabmap`: Use RTAB-Map's visual odometry
-  - `isaac`: Use Isaac ROS visual SLAM
-- `stereo` (default: `true`): Enable stereo camera mode
-- `image_width` (default: `960`): Simulation image width
-- `image_height` (default: `600`): Simulation image height
-
-### Real Robot: `real_robot/realsense_d455_stereo.launch.py`
-
-Configures RealSense D455 camera with optimized SLAM parameters.
-
-**Features:**
-- Stereo infrared camera setup
-- IMU integration with Madgwick filter
-- Optimized RTAB-Map parameters for D455
-- Automatic IR emitter disabling for stereo
-
-**Parameters:**
-- `unite_imu_method` (default: `2`): IMU data processing
-  - `0`: No IMU unification
-  - `1`: Copy method
-  - `2`: Linear interpolation (recommended)
-
-### Simulation: `simulation/isaac_sim.launch.py`
-
-Main Isaac Sim integration with conditional Isaac ROS support.
-
-**Components:**
-- Stereo image rectification
-- Optional Isaac Visual SLAM
-- Nav2 navigation integration
-- RTAB-Map SLAM with simulation parameters
-
-## Usage Examples
-
-### Basic Workflow
-
-#### 1. Real Robot Operation
+### Basic Mapping
 ```bash
-# Connect your RealSense D455 camera
-# Verify camera connection
-realsense-viewer
-
-# Launch RTAB-Map SLAM
+# Start mapping with real D455 camera
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
 
-# In another terminal, control robot
+# Control the robot manually
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-#### 2. Simulation Operation
+### Advanced Simulation
 ```bash
-# Start Isaac Sim with your robot scene
-# Then launch RTAB-Map
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py
-
-# For Isaac Visual SLAM instead of RTAB-Map
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py vo:=isaac
-```
-
-### Advanced Examples
-
-#### High-Quality Mapping (Real Robot)
-```bash
-# Full resolution with visualization
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
-```
-
-#### Simulation Development
-```bash
-# Custom image resolution for simulation
+# High-resolution mapping with RTABMap VO
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    vo:=rtabmap \
     image_width:=1280 \
     image_height:=720 \
-    vo:=rtabmap \
     rtabmap_viz:=true
-```
 
-#### Localization Mode (using existing map)
-```bash
-# Real robot localization
+# GPU-accelerated with Isaac Visual SLAM
 ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
-    d455:=true \
-    localization:=true
-
-# Simulation localization
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
-    localization:=true
-```
-sudo apt install ros-humble-rqt-robot-monitor
-```
-
-## Quick Start Guide
-
-### 🚀 Launch with RealSense D455 (Real Robot)
-
-```bash
-# Basic SLAM with D455
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
-
-# With visual odometry for better accuracy
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=rtabmap
-
-# Localization mode (requires existing map)
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true
-```
-
-### 🤖 Launch with Isaac Simulator
-
-**Step 1**: Start Isaac Sim
-1. Launch NVIDIA Isaac Sim
-2. Open: `Isaac Examples → ROS2 → Navigation → Carter Navigation`
-3. In Stage tab, enable stereo cameras:
-   - Navigate to `World → Nova_Carter_ROS → front_hawk → left_camera_render_product`
-   - Under `Property → Isaac Create Render Product Node → Inputs`, check "Enabled"
-   - Set `height=600` and `width=960` for better performance
-   - Repeat for `right_camera_render_product`
-
-**Step 2**: Launch RTAB-Map
-```bash
-# Basic simulation SLAM
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false
-
-# With Isaac visual odometry (disable wheel odom TF first!)
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false vo:=isaac
-
-# Custom image resolution
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720
-```
-
-## Launch Parameters Reference
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `d455` | bool | `false` | Use RealSense D455 instead of Isaac Sim |
-| `rtabmap_viz` | bool | `true` | Launch RTAB-Map visualization GUI |
-| `localization` | bool | `false` | Run in localization mode (map must exist) |
-| `vo` | string | `none` | Visual odometry: `none`, `rtabmap`, `isaac` |
-| `stereo` | bool | `true` | Use stereo vision instead of RGB+Depth |
-| `image_width` | int | `960` | Image width for Isaac Sim processing |
-| `image_height` | int | `600` | Image height for Isaac Sim processing |
-
-## Advanced Usage Examples
-
-### 🎯 High-Accuracy Mapping
-```bash
-# D455 with visual odometry and stereo
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=rtabmap stereo:=true
-
-# Simulation with higher resolution
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=false image_width:=1280 image_height:=720 vo:=rtabmap
-```
-
-### 🧭 Navigation Only (Localization)
-```bash
-# Use existing map for navigation
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true
-
-# Disable visualization for headless operation
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true localization:=true rtabmap_viz:=false
-```
-
-### 🔄 Different Sensor Modes
-```bash
-# RGB+Depth mode instead of stereo
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true stereo:=false
-
-# Pure wheel odometry (no visual odometry)
-ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true vo:=none
-```
-
-## Configuration Files
-
-### RTAB-Map Parameters (`config/rtabmap_params.yaml`)
-
-The configuration includes optimized parameters for:
-
-- **Loop Closure Detection**: Aggressive loop closure with `Rtabmap/DetectionRate: 1.0`
-- **Memory Management**: Balanced STM/LTM with `Mem/STMSize: 30`
-- **Visual Features**: GFTT detector with 400 max features for speed
-- **Registration**: 3DoF mode optimized for differential robots
-- **Grid Mapping**: 5cm resolution occupancy grids
-- **GPU Optimization**: CUDA-accelerated stereo processing
-
-Key optimizations for RTX 4070:
-```yaml
-Kp/DetectorStrategy: 6           # GFTT for speed
-Kp/MaxFeatures: 400              # Balanced feature count
-Vis/MaxFeatures: 1000            # High-quality matching
-Grid/CellSize: 0.05              # 5cm grid resolution
-Reg/Force3DoF: true              # 2D robot constraint
-```
-
-### Nav2 Parameters (`config/nav2_rtabmap_params.yaml`)
-
-Optimized for differential drive robots with:
-- **DWB Local Planner**: Smooth path following
-- **Costmap Integration**: RTAB-Map point cloud obstacles
-- **Velocity Limits**: Conservative for safety (`max_vel_x: 0.26`)
-- **Recovery Behaviors**: Spin, backup, and wait actions
-
-## Robot Control
-
-### Manual Teleoperation
-```bash
-# Keyboard control
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-
-# Gamepad control (if available)
-ros2 launch teleop_twist_joy teleop-launch.py
+    vo:=isaac \
+    stereo:=true
 ```
 
 ### Autonomous Navigation
-1. **Set Initial Pose**: Use RViz "2D Pose Estimate" tool
-2. **Send Goal**: Use RViz "Nav2 Goal" tool
-3. **Monitor Progress**: Check `/cmd_vel` and navigation status
-
-## Monitoring and Debugging
-
-### Essential Topics
 ```bash
-# Check camera topics
-ros2 topic list | grep camera
+# Start mapping mode
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py d455:=true
 
-# Monitor RTAB-Map status
-ros2 topic echo /rtabmap/info
-
-# Check navigation status
-ros2 topic echo /navigation_result
-
-# View point clouds
-ros2 topic echo /rtabmap/cloud_map
+# In another terminal, send navigation goals
+ros2 topic pub /goal_pose geometry_msgs/PoseStamped '{
+  header: {frame_id: "map"},
+  pose: {
+    position: {x: 2.0, y: 1.0, z: 0.0},
+    orientation: {w: 1.0}
+  }
+}'
 ```
 
-### Diagnostic Tools
+### Map Management
 ```bash
-# System monitor
-ros2 run rqt_robot_monitor rqt_robot_monitor
+# Save current map
+ros2 service call /rtabmap/set_mode_localization std_srvs/Empty
 
-# TF tree visualization
-ros2 run rqt_tf_tree rqt_tf_tree
-
-# Topic frequency check
-ros2 topic hz /front_stereo_camera/left/image_raw
+# Load existing map for localization
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    d455:=true \
+    localization:=true
 ```
 
-## Topic Information
+## 📊 Performance Optimization
 
-### Real Robot Topics (RealSense D455)
-```bash
-# Camera topics
-/camera/infra1/image_rect_raw    # Left infrared image
-/camera/infra2/image_rect_raw    # Right infrared image
-/camera/infra1/camera_info       # Left camera info
-/camera/infra2/camera_info       # Right camera info
-/camera/imu                      # Raw IMU data
-/imu/data                        # Filtered IMU data
+### GPU Acceleration
+- **Isaac ROS**: Leverages CUDA for image processing
+- **RTX Optimization**: Designed for NVIDIA RTX 4070+ performance
+- **Memory Management**: Efficient GPU memory usage for real-time operation
 
-# RTAB-Map topics
-/rtabmap/map                     # Occupancy grid map
-/rtabmap/grid_map                # Grid map
-/rtabmap/mapGraph                # Graph structure
-/odom                            # Visual odometry
+### Parameter Tuning
+```yaml
+# High-performance settings (config/nav2_rtabmap_params.yaml)
+rtabmap:
+  Mem/ReduceGraph: "false"          # Keep full graph for accuracy
+  RGBD/OptimizeMaxError: "0.1"      # Strict optimization threshold
+  Vis/MaxFeatures: "1000"           # High feature count for rich environments
+  
+nav2:
+  max_vel_x: 1.5                    # Aggressive velocity for simulation
+  inflation_radius: 0.2             # Tight obstacle avoidance
 ```
 
-### Simulation Topics (Isaac Sim)
-```bash
-# Isaac Sim camera topics
-/rgb_left                       # Left RGB camera
-/rgb_right                       # Right RGB camera
-/camera_info_left                # Left camera info
-/camera_info_right               # Right camera info
-
-# Processed topics
-/left/image_rect                 # Rectified left image
-/right/image_rect                # Rectified right image
-```
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-#### RealSense D455 Problems
+#### 1. RealSense D455 Not Detected
 ```bash
-# Camera not detected
-# 1. Check USB connection (USB 3.0+ required)
-# 2. Verify permissions
+# Check USB connection
+lsusb | grep Intel
+
+# Install latest RealSense SDK
+sudo apt install librealsense2-*
+
+# Check camera permissions
 sudo usermod -a -G dialout $USER
-# 3. Reboot and try
-realsense-viewer
-
-# Poor stereo quality
-# - Ensure good lighting conditions
-# - Check camera calibration
-# - Verify IR emitter is disabled
 ```
 
-#### Isaac Sim Integration
+#### 2. Isaac Sim Connection Issues
 ```bash
-# Isaac Sim not connecting
-# 1. Verify Isaac Sim is running
-# 2. Check ROS bridge is active
-# 3. Verify topic names match
+# Verify Isaac Sim is running
+ps aux | grep isaac
 
-# Performance issues
-# - Reduce image resolution
-# - Check GPU memory usage
-# - Monitor CPU usage
+# Check ROS bridge
+ros2 topic list | grep isaac
+
+# Restart Isaac Sim ROS2 bridge
 ```
 
-#### RTAB-Map Issues
+#### 3. RTABMap Memory Issues
 ```bash
-# No loop closures
-# - Increase visual features in scene
-# - Check camera calibration
-# - Verify stereo baseline
+# Clear RTABMap database
+rm ~/.ros/rtabmap.db
 
-# Poor mapping quality
-# - Slow down robot movement
-# - Improve lighting conditions
-# - Check IMU calibration
+# Reduce memory usage
+ros2 param set /rtabmap/rtabmap Mem/ReduceGraph true
 ```
 
-### Diagnostic Commands
+#### 4. Navigation Stack Problems
 ```bash
-# Check topics
-ros2 topic list
-
-# Monitor camera data
-ros2 topic echo /camera/infra1/image_rect_raw
-
-# Check RTAB-Map status
-ros2 topic echo /rtabmap/info
-
-# Verify transforms
+# Check TF tree
 ros2 run tf2_tools view_frames
+
+# Verify static transforms
+ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 base_link camera_link
+
+# Reset navigation
+ros2 service call /reinitialize_global_localization std_srvs/Empty
 ```
 
-## Performance Optimization
+### Performance Tips
 
-### For RTX 4070 Laptops
-- Enable GPU acceleration in RTAB-Map parameters
-- Use optimal image resolution (960x600 for real-time)
-- Monitor thermal throttling during long mapping sessions
+1. **GPU Memory**: Monitor VRAM usage with `nvidia-smi`
+2. **CPU Load**: Use `htop` to monitor processing load
+3. **Network**: Ensure low-latency connection for Isaac Sim
+4. **Storage**: Use SSD for RTABMap database storage
 
-### Memory Management
-- Clear RTAB-Map database periodically with `-d` argument
-- Monitor RAM usage during large mapping sessions
-- Use localization mode for navigation after mapping
+## 🔬 Advanced Configuration
 
-## Contributing
+### Custom Robot Integration
+To integrate with your own robot, modify these key files:
 
-1. Follow ROS2 coding standards
-2. Test with both simulation and real hardware
-3. Update documentation for new features
-4. Ensure backward compatibility
+1. **Robot Description**: Update TF frames in launch files
+2. **Sensor Topics**: Modify topic remappings for your sensor setup
+3. **Navigation Parameters**: Tune `nav2_rtabmap_params.yaml` for your robot's kinematics
 
-## License
+### Multi-Robot Setup
+```bash
+# Launch multiple instances with namespaces
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    namespace:=robot1 \
+    d455:=true
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    namespace:=robot2 \
+    d455:=true
+```
 
-## Support
+## 🎯 Launch Arguments Reference
 
-For issues and questions:
-1. Check this README troubleshooting section
-2. Verify all dependencies are installed
-3. Test with minimal configuration first
-4. Open an issue with detailed logs
+### Main Launch (`rtabmap_main.launch.py`)
+
+| Argument | Default | Choices | Description |
+|----------|---------|---------|-------------|
+| `d455` | `false` | `true`, `false` | Hardware selection: true=RealSense D455, false=Isaac Sim |
+| `rtabmap_viz` | `true` | `true`, `false` | Launch RTAB-Map visualization |
+| `localization` | `false` | `true`, `false` | Start in localization mode (requires existing map) |
+| `vo` | `none` | `none`, `rtabmap`, `isaac` | Visual odometry method |
+| `stereo` | `true` | `true`, `false` | Use stereo camera mode |
+| `image_width` | `960` | - | Simulation image width (pixels) |
+| `image_height` | `600` | - | Simulation image height (pixels) |
+
+### Real Robot Launch (`realsense_d455_stereo.launch.py`)
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `unite_imu_method` | `2` | IMU unite method: 0=None, 1=copy, 2=linear_interpolation |
+| `enable_infra1` | `true` | Enable infrared camera 1 |
+| `enable_infra2` | `true` | Enable infrared camera 2 |
+| `enable_color` | `false` | Enable RGB camera |
+| `enable_depth` | `false` | Enable depth stream |
+
+## 📚 References and Documentation
+
+- [RTABMap Documentation](http://introlab.github.io/rtabmap/)
+- [Isaac ROS Documentation](https://nvidia-isaac-ros.github.io/)
+- [RealSense ROS2 Package](https://github.com/IntelRealSense/realsense-ros)
+- [Nav2 Navigation Stack](https://navigation.ros.org/)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Authors
+
+- **Mobile Robotics Engineer** - *Initial development and integration*
+
+## 🙏 Acknowledgments
+
+- NVIDIA Isaac ROS team for GPU-accelerated robotics
+- RTABMap development team for robust SLAM algorithms
+- Intel RealSense team for excellent depth camera technology
+- ROS2 community for the modern robotics framework
 
 ---
 

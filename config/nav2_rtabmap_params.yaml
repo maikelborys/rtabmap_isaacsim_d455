@@ -336,3 +336,133 @@ velocity_smoother:
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
+
+# =====================================================
+# RTAB-MAP UNIFIED PARAMETERS
+# =====================================================
+# Unified parameters for both Isaac Sim and D455 hardware
+# Designed to achieve consistent mapping behavior
+# Author: Mobile Robotics Engineer
+
+rtabmap:
+  ros__parameters:
+    use_sim_time: true
+    
+    # === CORE SLAM CONFIGURATION ===
+    frame_id: "camera_link"
+    map_frame_id: "map"
+    odom_frame_id: "camera_odom"          # Visual odometry only - no wheel dependency
+    base_frame_id: "base_link"
+    
+    # === SUBSCRIPTION SETTINGS ===
+    subscribe_stereo: true
+    subscribe_odom_info: false            # DISABLE wheel odometry dependency
+    subscribe_scan: false                 # DISABLE laser dependency for consistency
+    subscribe_depth: false
+    subscribe_rgb: false
+    subscribe_rgbd: false
+    
+    # === SYNCHRONIZATION ===
+    approx_sync: true                     # More robust for real sensors
+    queue_size: 50                        # Large buffer for processing delays
+    
+    # === VISUAL ODOMETRY PARAMETERS ===
+    Vis/EstimationType: "1"               # 1=3D->2D (PnP) - more robust than 0=2D->3D
+    Vis/MaxFeatures: "600"                # Balanced feature count (not too high for real sensors)
+    Vis/MinInliers: "12"                  # Lower threshold for challenging environments
+    Vis/InlierDistance: "0.15"            # More tolerant distance threshold
+    Vis/RefineIterations: "5"             # Additional refinement iterations
+    Vis/PnPReprojError: "8.0"             # Pixel reprojection error tolerance
+    Vis/EpipolarGeometryVar: "0.02"       # Epipolar geometry variance
+    
+    # === STEREO PROCESSING ===
+    Stereo/MaxDisparity: "96.0"           # Reduced for indoor environments
+    Stereo/MinDisparity: "1.0"            # Avoid very close points
+    Stereo/OpticalFlow: "true"            # Better feature tracking between frames
+    Stereo/Eps: "0.01"                    # Stereo matching precision
+    Stereo/Iterations: "30"               # More RANSAC iterations
+    Stereo/MaxLevel: "3"                  # Pyramid levels for stereo
+    
+    # === CRITICAL: 2D MAPPING AND FLOOR DETECTION ===
+    Grid/FromDepth: "true"                # Generate occupancy grid from stereo depth
+    Grid/MaxObstacleHeight: "0.4"         # Only low obstacles (tables, chairs)
+    Grid/MaxGroundHeight: "0.05"          # Very low ground detection threshold
+    Grid/MinGroundHeight: "-0.05"         # Allow slight ground variations
+    Grid/NormalK: "20"                    # Points for surface normal estimation
+    Grid/GroundIsObstacle: "false"        # Don't mark ground as obstacle
+    Grid/3D: "false"                      # Force 2D occupancy grid
+    Grid/RayTracing: "true"               # Fill unknown space with ray tracing
+    Grid/CellSize: "0.05"                 # 5cm grid resolution
+    Grid/RangeMax: "5.0"                  # Maximum sensor range to consider
+    Grid/RangeMin: "0.1"                  # Minimum sensor range
+    Grid/ClusterRadius: "0.1"             # Cluster nearby points
+    Grid/MinClusterSize: "10"             # Minimum cluster size
+    Grid/FlatObstacleDetected: "true"     # Detect flat obstacles (important for floor)
+    
+    # === MEMORY MANAGEMENT ===
+    Mem/RehearsalSimilarity: "0.4"        # More aggressive similarity threshold
+    Mem/BadSignaturesIgnored: "false"     # Keep all observations for learning
+    Mem/MapLabelsAdded: "true"            # Add semantic labels
+    Mem/ReduceGraph: "false"              # Keep full pose graph
+    Mem/IncrementalMemory: "true"         # Incremental learning
+    Mem/InitWMWithAllNodes: "false"       # Don't load all nodes at start
+    
+    # === FEATURE DETECTION (ORB) ===
+    Kp/MaxFeatures: "600"                 # Maximum features per image
+    Kp/DetectorStrategy: "6"              # 6=ORB (robust and fast)
+    Kp/NNStrategy: "1"                    # 1=FLANN (fast matching)
+    Kp/WordsPerImage: "200"               # Visual words for bag-of-words
+    Kp/BadSignRatio: "0.8"                # Feature quality threshold
+    
+    # === OPTIMIZATION ===
+    Optimizer/Strategy: "1"               # 1=TORO, 0=GTSAM
+    Optimizer/Slam2D: "true"              # Force 2D pose graph optimization
+    Optimizer/Iterations: "20"            # Optimization iterations
+    Optimizer/PixelVariance: "1.0"        # Pixel measurement variance
+    Optimizer/RobustKernelDelta: "8.0"    # Robust kernel threshold
+    
+    # === REGISTRATION (ICP/Visual) ===
+    Reg/Strategy: "1"                     # 1=Vis, 2=ICP, 0=Vis+ICP
+    Reg/Force3DoF: "true"                 # Force 3DOF constraints (x,y,yaw)
+    Reg/RepeatOnce: "true"                # Repeat registration once if failed
+    
+    # === LOOP CLOSURE DETECTION ===
+    Rtabmap/DetectionRate: "1.0"          # Check every frame for loop closure
+    Rtabmap/TimeThr: "0"                  # No time threshold
+    Rtabmap/MemoryThr: "0"                # No memory threshold
+    Rtabmap/LoopClosureReextractFeatures: "true"  # Re-extract features for LC
+    
+    # Loop closure parameters
+    LccBow/MinInliers: "6"                # Lower inlier threshold
+    LccBow/InlierDistance: "0.15"         # More tolerant distance
+    LccBow/MaxResults: "10"               # Consider more candidates
+    LccBow/EpipolarGeometryVar: "0.02"    # Epipolar constraint variance
+    
+    # === ROBUST PARAMETERS FOR REAL SENSORS ===
+    RGBD/OptimizeMaxError: "4.0"          # More tolerant optimization error
+    RGBD/ProximityBySpace: "true"         # Use spatial proximity
+    RGBD/ProximityMaxGraphDepth: "50"     # Graph traversal depth
+    RGBD/AngularUpdate: "0.1"             # Minimum angular change (rad)
+    RGBD/LinearUpdate: "0.1"              # Minimum linear change (m)
+    RGBD/LocalRadius: "10"                # Local map radius
+    RGBD/OptimizeFromGraphEnd: "false"    # Don't optimize from end
+    
+    # === QUALITY THRESHOLDS ===
+    Rtabmap/PublishStats: "true"          # Publish statistics
+    Rtabmap/PublishLikelihood: "true"     # Publish localization likelihood
+    Rtabmap/PublishPdf: "true"            # Publish probability maps
+    Rtabmap/PublishLastSignature: "true"  # Publish last observation
+    
+    # === SPECIAL PARAMETERS FOR DIFFICULT ENVIRONMENTS ===
+    Vis/CorNNType: "1"                    # 1=FLANN_LSH for binary features
+    Vis/MaxDepth: "4.0"                   # Maximum depth to consider
+    Vis/MinDepth: "0.1"                   # Minimum depth to consider
+    Vis/RoiRatios: "0.03 0.03 0.04 0.04"  # ROI margins (left, right, top, bottom)
+    
+    # === DATABASE ===
+    DbSqlite3/InMemory: "false"           # Use disk database
+    DbSqlite3/CacheSize: "10000"          # Database cache size
+    
+    # === RTABMAP SPECIFIC ===
+    rtabmap_args: "--delete_db_on_start --udebug"
+    database_path: "~/.ros/rtabmap.db"

@@ -23,23 +23,21 @@ def generate_launch_description():
     """
     Launch RealSense D455 with RTAB-Map SLAM configuration
     """
-    # RTAB-Map parameters optimized for D455
-    rtabmap_parameters = [{
-        'frame_id': 'camera_link',
-        'subscribe_stereo': True,
-        'subscribe_odom_info': True,
-        'wait_imu_to_init': True,
-        'approx_sync': False,
-        'queue_size': 10
-    }]
+    # Get package directory for unified parameters
+    pkg_rtabmap_isaacsim_d455 = get_package_share_directory('rtabmap_isaacsim_d455')
+    
+    # Use unified parameters file for consistency with simulation
+    unified_params_file = os.path.join(pkg_rtabmap_isaacsim_d455, 'config', 'nav2_rtabmap_params.yaml')
 
-    # Topic remappings for D455 infrared cameras
+    # Topic remappings for D455 infrared cameras (stereo mode)
     topic_remappings = [
         ('imu', '/imu/data'),
         ('left/image_rect', '/camera/infra1/image_rect_raw'),
         ('left/camera_info', '/camera/infra1/camera_info'),
         ('right/image_rect', '/camera/infra2/image_rect_raw'),
-        ('right/camera_info', '/camera/infra2/camera_info')
+        ('right/camera_info', '/camera/infra2/camera_info'),
+        # Use visual odometry frame
+        ('odom', '/camera_odom')
     ]
 
     return LaunchDescription([
@@ -65,7 +63,19 @@ def generate_launch_description():
                 'unite_imu_method': LaunchConfiguration('unite_imu_method'),
                 'enable_infra1': 'true',
                 'enable_infra2': 'true',
-                'enable_sync': 'true'
+                'enable_color': 'false',  # Disable RGB for stereo-only mode
+                'enable_depth': 'false',  # Disable depth for stereo-only mode
+                'enable_sync': 'true',
+                # Optimize for stereo SLAM
+                'infra_width': '848',
+                'infra_height': '480',
+                'infra_fps': '30',
+                # Disable emitter for better stereo performance
+                'emitter_enabled': '0',
+                # Manual exposure for consistent results
+                'enable_auto_exposure': 'false',
+                'exposure': '8500',
+                'gain': '16'
             }.items(),
         ),
 
@@ -74,8 +84,18 @@ def generate_launch_description():
             package='rtabmap_odom', 
             executable='stereo_odometry', 
             output='screen',
-            parameters=rtabmap_parameters,
-            remappings=topic_remappings
+            parameters=[{
+                'frame_id': 'camera_link',
+                'odom_frame_id': 'camera_odom',
+                'publish_tf': True,
+                'approx_sync': True,
+                'queue_size': 50,
+                'subscribe_stereo': True,
+                'wait_imu_to_init': False,
+                'use_sim_time': True
+            }],
+            remappings=topic_remappings,
+            arguments=['--ros-args', '--log-level', 'info']
         ),
 
         # === RTAB-MAP SLAM ===
@@ -83,17 +103,44 @@ def generate_launch_description():
             package='rtabmap_slam', 
             executable='rtabmap', 
             output='screen',
-            parameters=rtabmap_parameters,
+            parameters=[{
+                'frame_id': 'camera_link',
+                'odom_frame_id': 'camera_odom', 
+                'map_frame_id': 'map',
+                'publish_tf': True,
+                'approx_sync': True,
+                'queue_size': 50,
+                'subscribe_stereo': True,
+                'subscribe_odom_info': False,  # No wheel odometry
+                'use_sim_time': True,
+                # Critical RTABMap parameters
+                'Vis/MinInliers': '12',
+                'Vis/InlierDistance': '0.15',
+                'Vis/MaxFeatures': '600',
+                'Grid/FromDepth': 'true',
+                'Grid/MaxGroundHeight': '0.05',
+                'Grid/MinGroundHeight': '-0.05',
+                'Grid/GroundIsObstacle': 'false',
+                'Reg/Force3DoF': 'true'
+            }],
             remappings=topic_remappings,
-            arguments=['-d']  # Delete database on startup
+            arguments=['--delete_db_on_start']  # Clean start
         ),
 
-        # === RTAB-MAP VISUALIZATION ===
+        # === RTAB-MAP VISUALIZATION (simplified parameters) ===
         Node(
             package='rtabmap_viz', 
             executable='rtabmap_viz', 
             output='screen',
-            parameters=rtabmap_parameters,
+            parameters=[{
+                'frame_id': 'camera_link',
+                'odom_frame_id': 'camera_odom',
+                'map_frame_id': 'map',
+                'approx_sync': True,
+                'queue_size': 50,
+                'subscribe_stereo': True,
+                'use_sim_time': True
+            }],
             remappings=topic_remappings
         ),
                 
@@ -109,5 +156,24 @@ def generate_launch_description():
                 'publish_tf': False
             }],
             remappings=[('imu/data_raw', '/camera/imu')]
+        ),
+
+        # === STATIC TRANSFORMS ===
+        # Essential transforms for camera-only SLAM
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='base_to_camera_link',
+            arguments=['0', '0', '0.1', '0', '0', '0', 'base_link', 'camera_link'],
+            output='screen'
+        ),
+        
+        # Map to odom transform (identity when using visual SLAM only)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher', 
+            name='map_to_odom',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'camera_odom'],
+            output='screen'
         ),
     ])

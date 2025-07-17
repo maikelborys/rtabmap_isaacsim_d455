@@ -32,6 +32,10 @@ def launch_setup(context, *args, **kwargs):
     isaac_vslam_launch = PathJoinSubstitution(
         [pkg_rtabmap_isaacsim_d455, 'launch', 'simulation', 'isaac_visual_slam.launch.py'])
     
+    # Use unified parameters for consistent mapping
+    unified_params = PathJoinSubstitution(
+        [pkg_rtabmap_isaacsim_d455, 'config', 'nav2_rtabmap_params.yaml'])
+    
     vo = LaunchConfiguration('vo').perform(context)
 
     # Include stereo image processing launch
@@ -45,11 +49,11 @@ def launch_setup(context, *args, **kwargs):
     
     nav2_args = [('use_sim_time', 'true')]
     if vo == 'rtabmap':
-        # We need to change the base odom frame to vo
-        nav2_args.append(('params_file', str(nav2_vo_params.perform(context))))
+        # Use unified parameters for visual odometry
+        nav2_args.append(('params_file', str(unified_params.perform(context))))
     else:
-        # Use custom version with higher velocities
-        nav2_args.append(('params_file', str(nav2_params.perform(context))))
+        # Use unified parameters for all cases
+        nav2_args.append(('params_file', str(unified_params.perform(context))))
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
         launch_arguments=nav2_args
@@ -59,6 +63,7 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource([rviz_launch])
     )
     
+    # CRITICAL: Configure RTABMap with unified parameters and visual-only odometry
     rtabmap = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([rtabmap_launch]),
         launch_arguments=[
@@ -67,7 +72,15 @@ def launch_setup(context, *args, **kwargs):
             ('use_sim_time', 'true'),
             ('stereo_camera_namespace', 'front_stereo_camera'),
             ('enable_vo', str(vo == 'rtabmap')),
-            ('stereo', LaunchConfiguration('stereo'))
+            ('stereo', LaunchConfiguration('stereo')),
+            # Use unified parameters for consistent behavior
+            ('params_file', str(unified_params.perform(context))),
+            # Force visual-only odometry (no wheel dependency)
+            ('odom_frame_id', 'camera_odom'),
+            ('visual_odometry', str(vo == 'rtabmap')),
+            ('subscribe_odom_info', 'false'),  # Disable wheel odometry
+            ('approx_sync', 'true'),           # Robust synchronization
+            ('rtabmap_args', '--delete_db_on_start --udebug')  # Debug output
         ]
     )
 

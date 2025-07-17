@@ -42,6 +42,44 @@ ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
     localization:=true
 ```
 
+## 🔥 NEW: Optimized D455 RGBD Mode
+
+### Why RGBD Mode is Superior for D455
+The D455 is an RGBD camera (RGB + Depth) that provides much better performance than stereo infrared mode:
+
+**✅ RGBD Advantages:**
+- **Rich RGB features**: Color imagery provides 10x more visual features than IR
+- **Hardware depth**: Active IR depth sensor more accurate than stereo computation  
+- **Better floor detection**: Direct depth data enables precise ground plane detection
+- **Lower CPU usage**: No stereo matching computation required
+- **Improved tracking**: RGB features don't suffer from "image sticking" issues
+
+**❌ Stereo IR Issues:**
+- Limited features on smooth surfaces
+- Computational overhead of stereo matching
+- Poor performance in low-texture environments  
+- Inconsistent tracking leading to "image sticking"
+
+### RGBD Quick Start
+```bash
+# Test the optimized RGBD configuration
+./test_d455_rgbd.sh
+
+# Or launch directly with different resolutions
+ros2 launch rtabmap_isaacsim_d455 d455_rgbd_optimized.launch.py resolution:=640x480
+ros2 launch rtabmap_isaacsim_d455 d455_rgbd_optimized.launch.py resolution:=848x480  
+ros2 launch rtabmap_isaacsim_d455 d455_rgbd_optimized.launch.py resolution:=1280x720
+```
+
+### RGBD Configuration Features
+- **RGB Camera**: 640x480, 848x480, or 1280x720 @ 30fps
+- **Depth Alignment**: Depth automatically aligned to RGB frame
+- **IMU Integration**: 6-DOF sensor fusion with Madgwick filter
+- **Enhanced Floor Detection**: Optimized Grid parameters for ground plane
+- **Visual Odometry**: RGBD-based tracking with 1000+ features
+- **Loop Closure**: RGB-based place recognition
+- **Real-time Mapping**: Occupancy grid generation from depth data
+
 ## 📁 Project Architecture
 
 ```
@@ -388,6 +426,70 @@ ros2 service call /reinitialize_global_localization std_srvs/Empty
 
 ## 🔬 Advanced Configuration
 
+### Unified Parameter System
+
+This package includes a **unified parameter configuration** that ensures consistent mapping behavior between Isaac Sim and RealSense D455:
+
+#### Key Unified Features:
+- **Visual-Only Odometry**: Both systems use camera-based odometry only (no wheel dependency)
+- **Identical RTABMap Settings**: Same feature detection, loop closure, and optimization parameters
+- **Consistent 2D Mapping**: Unified grid generation and floor detection settings
+- **Robust Real Sensor Support**: Parameters tuned for sensor noise and real-world conditions
+
+#### Testing Unified Parameters:
+```bash
+# Run the included test script
+./test_unified_mapping.sh
+
+# Or test manually:
+
+# Isaac Sim with unified parameters
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    d455:=false \
+    vo:=rtabmap \
+    rtabmap_viz:=true
+
+# D455 with identical parameters
+ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
+    d455:=true \
+    vo:=rtabmap \
+    rtabmap_viz:=true
+```
+
+#### Monitoring Map Quality:
+```bash
+# Check feature detection consistency
+ros2 topic echo /rtabmap/info --field data.features
+
+# Monitor odometry quality
+ros2 topic echo /rtabmap/odom --field pose.covariance
+
+# Verify loop closures
+ros2 topic echo /rtabmap/info --field data.loop_closure_id
+```
+
+### Floor Detection Improvements
+
+The unified parameters include special optimizations for floor detection:
+
+```yaml
+# Floor-optimized grid settings
+Grid/FromDepth: "true"                # Generate from stereo depth
+Grid/MaxGroundHeight: "0.05"          # Very low ground threshold  
+Grid/MinGroundHeight: "-0.05"         # Allow slight variations
+Grid/GroundIsObstacle: "false"        # Don't mark ground as obstacle
+Grid/FlatObstacleDetected: "true"     # Detect flat surfaces
+Grid/RayTracing: "true"               # Fill unknown space
+```
+
+### Isaac Sim Realism Mode
+
+To make Isaac Sim behave more like real hardware:
+
+1. **Disable Perfect Sensors**: The updated launch files remove dependency on perfect wheel odometry
+2. **Visual-Only Mapping**: Both systems use only camera and IMU data
+3. **Consistent Parameters**: Same RTABMap configuration for both platforms
+
 ### Custom Robot Integration
 To integrate with your own robot, modify these key files:
 
@@ -407,60 +509,86 @@ ros2 launch rtabmap_isaacsim_d455 rtabmap_main.launch.py \
     d455:=true
 ```
 
-## 🎯 Launch Arguments Reference
+# Comparison of Launch Files for RealSense D435i
 
-### Main Launch (`rtabmap_main.launch.py`)
+This document provides a comparison of three launch files designed for the RealSense D435i camera:
 
-| Argument | Default | Choices | Description |
-|----------|---------|---------|-------------|
-| `d455` | `false` | `true`, `false` | Hardware selection: true=RealSense D455, false=Isaac Sim |
-| `rtabmap_viz` | `true` | `true`, `false` | Launch RTAB-Map visualization |
-| `localization` | `false` | `true`, `false` | Start in localization mode (requires existing map) |
-| `vo` | `none` | `none`, `rtabmap`, `isaac` | Visual odometry method |
-| `stereo` | `true` | `true`, `false` | Use stereo camera mode |
-| `image_width` | `960` | - | Simulation image width (pixels) |
-| `image_height` | `600` | - | Simulation image height (pixels) |
+1. **_realsense_d435i_color.launch.py**
+2. **_realsense_d435i_infra.launch.py**
+3. **_realsense_d435i_stereo.launch.py**
 
-### Real Robot Launch (`realsense_d455_stereo.launch.py`)
+## Overview
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `unite_imu_method` | `2` | IMU unite method: 0=None, 1=copy, 2=linear_interpolation |
-| `enable_infra1` | `true` | Enable infrared camera 1 |
-| `enable_infra2` | `true` | Enable infrared camera 2 |
-| `enable_color` | `false` | Enable RGB camera |
-| `enable_depth` | `false` | Enable depth stream |
-
-## 📚 References and Documentation
-
-- [RTABMap Documentation](http://introlab.github.io/rtabmap/)
-- [Isaac ROS Documentation](https://nvidia-isaac-ros.github.io/)
-- [RealSense ROS2 Package](https://github.com/IntelRealSense/realsense-ros)
-- [Nav2 Navigation Stack](https://navigation.ros.org/)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **Mobile Robotics Engineer** - *Initial development and integration*
-
-## 🙏 Acknowledgments
-
-- NVIDIA Isaac ROS team for GPU-accelerated robotics
-- RTABMap development team for robust SLAM algorithms
-- Intel RealSense team for excellent depth camera technology
-- ROS2 community for the modern robotics framework
+All three launch files are designed to work with the RealSense D435i camera and integrate with RTAB-Map for SLAM and odometry. They share common features such as IMU integration, remapping of topics, and launching RTAB-Map nodes. However, they differ in the type of data they process and the configuration of the camera.
 
 ---
 
-**Happy SLAM-ming! 🤖📍**
+## Key Differences
+
+### 1. **_realsense_d435i_color.launch.py**
+- **Purpose**: Processes RGB color images and aligned depth data.
+- **Remappings**:
+  - `rgb/image`: `/camera/color/image_raw`
+  - `rgb/camera_info`: `/camera/color/camera_info`
+  - `depth/image`: `/camera/aligned_depth_to_color/image_raw`
+- **Camera Settings**:
+  - `rgb_camera.profile`: `640x360x30`
+- **IR Emitter**: Enabled (`depth_module.emitter_enabled = 1`).
+
+### 2. **_realsense_d435i_infra.launch.py**
+- **Purpose**: Processes infrared images and depth data.
+- **Remappings**:
+  - `rgb/image`: `/camera/infra1/image_rect_raw`
+  - `rgb/camera_info`: `/camera/infra1/camera_info`
+  - `depth/image`: `/camera/depth/image_rect_raw`
+- **Camera Settings**:
+  - Infrared cameras enabled (`enable_infra1` and `enable_infra2`).
+- **IR Emitter**: Disabled (`depth_module.emitter_enabled = 0`).
+
+### 3. **_realsense_d435i_stereo.launch.py**
+- **Purpose**: Processes stereo infrared images for depth computation.
+- **Remappings**:
+  - `left/image_rect`: `/camera/infra1/image_rect_raw`
+  - `left/camera_info`: `/camera/infra1/camera_info`
+  - `right/image_rect`: `/camera/infra2/image_rect_raw`
+  - `right/camera_info`: `/camera/infra2/camera_info`
+- **Camera Settings**:
+  - Stereo mode enabled (`subscribe_stereo = True`).
+- **IR Emitter**: Disabled (`depth_module.emitter_enabled = 0`).
+
+---
+
+## Common Features
+
+- **IMU Integration**:
+  - All launch files include the IMU filter node (`imu_filter_madgwick`) to compute quaternion data.
+  - IMU remapping: `imu/data_raw` → `/camera/imu`.
+- **RTAB-Map Nodes**:
+  - `rtabmap_odom`: For odometry.
+  - `rtabmap_slam`: For SLAM.
+  - `rtabmap_viz`: For visualization.
+- **Launch Arguments**:
+  - `unite_imu_method`: Default value is `2` (linear interpolation).
+
+---
+
+## Summary
+
+| Feature                  | Color Launch File       | Infra Launch File       | Stereo Launch File      |
+|--------------------------|-------------------------|-------------------------|-------------------------|
+| **Image Type**           | RGB Color              | Infrared                | Stereo Infrared         |
+| **Depth Source**         | Aligned Depth          | Depth                   | Stereo Depth            |
+| **IR Emitter**           | Enabled                | Disabled                | Disabled                |
+| **IMU Integration**      | Yes                    | Yes                    | Yes                    |
+| **RTAB-Map Nodes**       | Yes                    | Yes                    | Yes                    |
+
+---
+
+## Conclusion
+
+Each launch file is tailored for specific use cases:
+- **Color Launch File**: Ideal for applications requiring RGB color images.
+- **Infra Launch File**: Suitable for infrared-based applications.
+- **Stereo Launch File**: Best for stereo depth computation.
+
+Choose the appropriate launch file based on your application's requirements.
